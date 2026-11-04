@@ -24,21 +24,39 @@ Les questions complémentaires sont facultatives. Les états « non renseigné �
 
 ## Calcul et limites actuelles
 
-- Les réponses du questionnaire restent dans la mémoire de la page et ne sont pas envoyées à un serveur.
+- Les réponses détaillées restent dans la mémoire de la page et ne sont pas envoyées à un serveur Horizon. Le pays et la référence statistique sont transmis à l'API Eurostat pour récupérer la table correspondante ; l'âge et les réponses de mode de vie/santé ne sont pas transmis.
 - Les réponses de mode de vie et de santé sont recueillies pour constituer le profil, mais **ne modifient pas le calcul de mortalité**.
-- Le calcul actuel utilise encore le jeu de secours synthétique de `data.js`. La tentative Eurostat ne fournit pas encore une série détaillée d'âge interprétée et validée.
-- Les risques à 1, 5 et 10 ans sont donc des résultats de démonstration sur données synthétiques, **pas des estimations officielles ni des risques individuels**.
-- Les répartitions par cause sont illustratives et ne sont pas des statistiques officielles.
+- Le moteur tente désormais de récupérer auprès d'Eurostat les probabilités de décès par âge (`PROBDEATH`) et l'espérance de vie par âge (`LIFEXP`) dans `demo_mlifetable`, pour l'année 2024 puis les années antérieures si nécessaire.
+- Les données sont interprétées seulement si les séries d'âge requises sont présentes et valides. En cas d'échec, l'application bascule sur le jeu synthétique avec un avertissement explicite.
+- La table Eurostat utilise un intervalle ouvert 95+ ; le questionnaire MVP est donc limité à 18–94 ans pour les calculs officiels. Les horizons qui dépassent la plage disponible sont affichés comme indisponibles.
+- Les répartitions par cause restent illustratives et synthétiques, même lorsque les probabilités toutes causes proviennent d'Eurostat.
 - `risques.json` conserve les anciens coefficients exploratoires, mais ils ne sont plus appliqués par le calcul du MVP.
 
-Avant toute diffusion de résultats comme statistiques réelles, il faut intégrer et valider des tables officielles par âge, pays et référence statistique, puis effectuer des tests actuariels indépendants.
+Avant toute diffusion publique, il reste à effectuer un test réseau réel de l'API pour chaque pays proposé, comparer des profils français avec les tables INSEE et faire valider indépendamment les conventions actuarielles. Les causes de décès ne sont pas encore intégrées.
+
+## Test du parseur
+
+Avec Node.js installé, exécuter :
+
+```bash
+node tests/data-smoke.test.js
+```
+
+Ce test utilise une réponse JSON-stat simulée hors ligne. Il vérifie le décodage des catégories d'âge, les séries qx/LIFEXP et le traitement de l'intervalle ouvert 95+. Il ne remplace pas un test réseau réel de l'API Eurostat.
+
+## Sources officielles
+
+- [Eurostat — demo_mlifetable](https://ec.europa.eu/eurostat/databrowser/product/view/demo_mlifetable)
+- [Documentation de l'API Eurostat](https://ec.europa.eu/eurostat/en/web/user-guides/data-browser/api-data-access/api-getting-started/api)
+- [Méthodologie Eurostat des tables de mortalité](https://ec.europa.eu/eurostat/cache/metadata/Annexes/demo_mor_esms_an_Annex_-_Eurostat_from2014.pdf)
+- [INSEE — quotients de mortalité et espérance de vie](https://www.insee.fr/fr/statistiques/8999019)
 
 ## Fichiers
 
 - `index.html` : structure et questionnaire.
 - `style.css` : interface responsive.
 - `app.js` : navigation, collecte locale, calcul de référence, graphiques et export CSV.
-- `data.js` : tentative Eurostat, cache navigateur et secours synthétique.
+- `data.js` : récupération Eurostat `PROBDEATH` / `LIFEXP`, validation des séries, cache navigateur et secours synthétique.
 - `risques.json` : anciens coefficients exploratoires conservés à titre documentaire ; non utilisés par le MVP.
 
 ## Déploiement

@@ -7,7 +7,7 @@
   const form = $("#profile-form");
   const steps = $$(".step");
   const next = $("#next"), prev = $("#prev"), submit = $("#calculate");
-  let current = 0, profile = null;
+  let current = 0, profile = null, activeData = null;
   let survivalChart = null, mortalityChart = null, causesChart = null, rows = [];
   const causeNames = {
     cardiovascular: "Cardiovasculaire", cancer: "Cancers", respiratory: "Respiratoire",
@@ -41,8 +41,8 @@
     }
     if (current === 0) {
       const age = Number(form.elements.age.value);
-      if (!Number.isInteger(age) || age < 18 || age > 100) {
-        form.elements.age.setCustomValidity("L'âge doit être un nombre entier compris entre 18 et 100 ans.");
+      if (!Number.isInteger(age) || age < 18 || age > 94) {
+        form.elements.age.setCustomValidity("L'âge doit être un nombre entier compris entre 18 et 94 ans.");
         form.elements.age.reportValidity();
         form.elements.age.setCustomValidity("");
         return false;
@@ -114,9 +114,13 @@
   }
 
   function makeBaseline(data, sex) {
+    if (data.qx?.[sex]) {
+      const qx = data.qx[sex];
+      return Array.from({length: 101}, (_, age) => age <= 95 ? Number(qx[age] ?? 1) : 1);
+    }
     const mx = data.mx?.[sex] || data.mx?.T || data.mx?.M;
     if (!mx) throw new Error("Table de mortalité indisponible pour cette référence.");
-    return Array.from({length: 101}, (_, age) => Math.max(0, Math.min(.9, Number(mx[age]) || 0)));
+    return Array.from({length: 101}, (_, age) => 1 - Math.exp(-Math.max(0, Math.min(.9, Number(mx[age]) || 0))));
   }
 
   function causeMix(sex, data) {
@@ -132,28 +136,36 @@
     const baseline = makeBaseline(data, p.sex);
     const mix = causeMix(p.sex, data);
     const resultRows = [];
+    const maxAge = data.sourceType === "official" ? 94 : 100;
+    if (data.sourceType === "official" && p.age >= 95) {
+      throw new Error("La table Eurostat utilise un intervalle ouvert 95+ ; cette version ne calcule pas encore un profil à partir de 95 ans.");
+    }
     let survival = 1, weightedDeathAge = 0, deathMass = 0, median = null;
 
-    for (let age = p.age; age <= 100; age++) {
-      const mx = baseline[age];
-      const q = 1 - Math.exp(-mx);
+    for (let age = p.age; age <= maxAge; age++) {
+      const q = baseline[age];
       const fromToday = survival * q;
       const shares = {...mix};
-      resultRows.push({age, survival, q, fromToday, shares, total: mx});
+      resultRows.push({age, survival, q, fromToday, shares, total: q});
       weightedDeathAge += age * fromToday;
       deathMass += fromToday;
       if (median === null && survival >= .5 && survival * (1 - q) < .5) median = age;
       survival *= (1 - q);
     }
+    if (data.sourceType === "official" && median === null && survival >= .5) median = "95+";
 
     const riskAt = years => {
-      if (p.age + years > 101) return null;
+      if (p.age + years > maxAge + 1) return null;
       let s = 1;
       for (let age = p.age; age < p.age + years; age++) s *= 1 - resultRows[age - p.age].q;
       return 1 - s;
     };
-    const remaining = resultRows.reduce((sum, row) => sum + row.survival, 0);
-    const meanAge = deathMass > 0 ? weightedDeathAge / deathMass : p.age;
+    const remaining = data.sourceType === "official"
+      ? Number(data.ex?.[p.sex]?.[p.age])
+      : resultRows.reduce((sum, row) => sum + row.survival, 0);
+    const meanAge = data.sourceType === "official"
+      ? null
+      : (deathMass > 0 ? weightedDeathAge / deathMass : p.age);
     return {rows: resultRows, remaining, meanAge, median, risk1: riskAt(1), risk5: riskAt(5), risk10: riskAt(10), mix};
   }
 
@@ -176,11 +188,18 @@
   function makeCharts() {
     if (typeof Chart === "undefined") throw new Error("La bibliothèque graphique Chart.js n'a pas pu être chargée.");
     const labels = rows.map(row => row.age);
+    const survivalLabels = [...labels];
+    const survivalValues = rows.map(row => row.survival * 100);
+    if (activeData?.sourceType === "official" && rows.length) {
+      const last = rows[rows.length - 1];
+      survivalLabels.push(95);
+      survivalValues.push(last.survival * (1 - last.q) * 100);
+    }
     [survivalChart, mortalityChart, causesChart].forEach(chart => chart?.destroy());
     survivalChart = new Chart($("#survival-chart"), {
       type: "line",
-      data: {labels, datasets: [
-        {label: "Référence statistique", data: rows.map(row => row.survival * 100),
+      data: {labels: survivalLabels, datasets: [
+        {label: "Référence statistique", data: survivalValues,
           borderColor: "#2463a6", backgroundColor: "#2463a615", fill: true, pointRadius: 0, tension: .2}
       ]},
       options: chartOptions("Probabilité de survie (%)", 100)
@@ -228,26 +247,32 @@
     $("#profile-summary").innerHTML =
       `<strong>Profil enregistré</strong><p>${p.age} ans · ${p.sex === "F" ? "référence femmes" : p.sex === "M" ? "référence hommes" : "référence ensemble"} · ${$("#country").selectedOptions[0].textContent}</p>` +
       `<p>Tabac : ${smokingLabels[p.smoking_status]} · IMC : ${bmi} · Diagnostics déclarés : ${yesCount}</p>` +
-      `<p class="hint">Les réponses détaillées restent dans cette page et ne sont pas transmises au serveur. Elles ne modifient pas encore le calcul.</p>`;
+      `<p class="hint">Vos réponses détaillées ne sont pas envoyées à Horizon. Le pays et la référence statistique servent uniquement à interroger Eurostat. Les autres réponses ne modifient pas encore le calcul.</p>`;
   }
 
   function fillResults(out, data) {
-    $("#life-years").textContent = fmt(out.remaining, 1);
-    $("#mean-age").textContent = `${fmt(out.meanAge, 1)} ans`;
-    $("#median-age").textContent = out.median === null ? "Non atteinte" : `${out.median} ans`;
-    $("#risk-1").textContent = out.risk1 == null ? "—" : `${fmt(out.risk1 * 100, 2)} %`;
-    $("#risk-5").textContent = out.risk5 == null ? "—" : `${fmt(out.risk5 * 100, 2)} %`;
-    $("#risk-10").textContent = out.risk10 == null ? "—" : `${fmt(out.risk10 * 100, 2)} %`;
+    activeData = data;
+    $("#life-years").textContent = Number.isFinite(out.remaining) ? fmt(out.remaining, 1) : "Indisponible";
+    $("#life-years-note").textContent = data.sourceType === "official"
+      ? "Eurostat · espérance de vie à l'âge exact"
+      : "Approximation synthétique, tronquée à 100 ans";
+    $("#mean-age").textContent = out.meanAge == null ? "Non calculable" : `${fmt(out.meanAge, 1)} ans`;
+    $("#mean-age-metric").hidden = data.sourceType === "official";
+    $("#median-age").textContent = out.median === null ? "Non atteinte" : out.median === "95+" ? "95 ans ou plus" : `${out.median} ans`;
+    $("#risk-1").textContent = out.risk1 == null ? "Indisponible" : `${fmt(out.risk1 * 100, 2)} %`;
+    $("#risk-5").textContent = out.risk5 == null ? "Indisponible" : `${fmt(out.risk5 * 100, 2)} %`;
+    $("#risk-10").textContent = out.risk10 == null ? "Indisponible" : `${fmt(out.risk10 * 100, 2)} %`;
     $("#data-status").textContent = data.source || "Source non précisée";
     const isSynthetic = /synthétique|secours|fallback|non interprétée/i.test(data.source || "");
     $("#data-warning").textContent = isSynthetic
       ? "Attention : les données actuellement utilisées sont un jeu de secours synthétique. Les chiffres affichés servent uniquement à vérifier le fonctionnement de l'application ; ils ne sont pas des estimations officielles et ne doivent pas être interprétés comme votre risque réel."
-      : `Source des données : ${data.source}. Les résultats restent des statistiques de population, pas une prédiction individuelle.`;
+      : `Source des données : ${data.source}. Les probabilités toutes causes et l'espérance de vie proviennent de la table officielle. Les parts par cause restent illustratives et synthétiques ; les réponses de santé ne modifient pas le calcul.`;
     renderProfile(profile);
     $("#mortality-age").value = profile.age;
     $("#mortality-age").min = profile.age;
+    $("#mortality-age").max = rows[rows.length - 1].age;
     $("#cause-age").min = profile.age;
-    $("#cause-age").max = 100;
+    $("#cause-age").max = data.sourceType === "official" ? 94 : 100;
     $("#cause-age").value = Math.max(profile.age, Math.min(60, 100));
     fillTable();
     makeCharts();
@@ -308,7 +333,7 @@
   $("#cause-age").addEventListener("input", event => { if (rows.length) updateCauses(Number(event.target.value)); });
   $("#mortality-age").addEventListener("change", () => {
     if (!rows.length) return;
-    const min = profile.age, max = 100;
+    const min = profile.age, max = rows[rows.length - 1].age;
     const value = Math.min(max, Math.max(min, Number($("#mortality-age").value) || min));
     $("#mortality-age").value = value;
     makeCharts();

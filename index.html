@@ -20,7 +20,7 @@
   <section class="intro">
     <div class="eyebrow">ESTIMATION STATISTIQUE · BÊTA</div>
     <h1>Votre horizon,<br><em>en perspective.</em></h1>
-    <p>Explorez les statistiques de survie et les causes de décès selon un profil simplifié. Ce modèle décrit des tendances de population, pas votre destin individuel.</p>
+    <p>Explorez les statistiques de survie d’une population de référence et renseignez votre profil de santé. Ces données décrivent des tendances collectives, pas votre destin individuel.</p>
     <div class="notice"><strong>Important :</strong> estimation statistique à visée informative uniquement. Ce site ne constitue ni un diagnostic ni un outil médical.</div>
   </section>
 
@@ -30,8 +30,8 @@
       <div class="step active" data-step="0">
         <p class="step-intro">Ces trois informations suffisent pour afficher une première référence statistique.</p>
         <div class="fields">
-          <label>Quel âge avez-vous ? <span class="hint">ans · de 18 à 100</span>
-            <input name="age" type="number" min="18" max="100" inputmode="numeric" placeholder="Ex. 42" required>
+          <label>Quel âge avez-vous ? <span class="hint">ans · de 18 à 94</span>
+            <input name="age" type="number" min="18" max="94" inputmode="numeric" placeholder="Ex. 42" required>
           </label>
           <label>Quelle référence statistique souhaitez-vous utiliser ?
             <select name="sex" required>
@@ -42,12 +42,15 @@
             </select>
             <span class="hint">Il s'agit de la catégorie utilisée par les tables de mortalité, pas d'une question sur votre identité.</span>
           </label>
-          <label>Pays de référence
+          <label>Pays de référence (données Eurostat)
             <select name="country" id="country" required>
               <option value="FR" selected>France</option><option value="DE">Allemagne</option><option value="BE">Belgique</option>
-              <option value="ES">Espagne</option><option value="IT">Italie</option><option value="US">États-Unis</option>
-              <option value="GB">Royaume-Uni</option><option value="CA">Canada</option><option value="JP">Japon</option>
-              <option value="AU">Australie</option><option value="WORLD">Monde (référence à vérifier)</option>
+              <option value="ES">Espagne</option><option value="IT">Italie</option><option value="UK">Royaume-Uni</option>
+              <option value="NL">Pays-Bas</option><option value="AT">Autriche</option><option value="PT">Portugal</option>
+              <option value="SE">Suède</option><option value="DK">Danemark</option><option value="FI">Finlande</option>
+              <option value="IE">Irlande</option><option value="EL">Grèce</option><option value="PL">Pologne</option>
+              <option value="CZ">Tchéquie</option><option value="HU">Hongrie</option><option value="RO">Roumanie</option>
+              <option value="NO">Norvège</option><option value="CH">Suisse</option>
             </select>
           </label>
         </div>
@@ -160,26 +163,28 @@
     <div id="data-warning" class="data-warning" role="status"></div>
     <div id="profile-summary" class="profile-summary"></div>
     <div class="metric-grid">
-      <article class="metric"><span>Espérance de vie restante (référence)</span><strong id="life-years">—</strong><small>approximation tronquée à 100 ans</small></article>
-      <article class="metric"><span>Âge moyen au décès (référence)</span><strong id="mean-age">—</strong><small>sur les décès simulés avant 101 ans</small></article>
+      <article class="metric"><span>Espérance de vie restante (référence)</span><strong id="life-years">—</strong><small id="life-years-note">Table de référence</small></article>
+      <article class="metric" id="mean-age-metric"><span>Âge moyen au décès (démo)</span><strong id="mean-age">—</strong><small>indicateur illustratif, non officiel</small></article>
       <article class="metric"><span>Médiane de survie (référence)</span><strong id="median-age">—</strong><small>âge où la survie passe sous 50 %</small></article>
     </div>
-    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de survie</h3><p>Comparaison avec la table de population sélectionnée.</p></div></div><canvas id="survival-chart" aria-label="Courbe de survie"></canvas></article>
-    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de décès par âge</h3><p>Conditionnelle sur le fait d’être vivant au début de l’année, et cumulée depuis aujourd’hui.</p></div><label>Âge de départ du graphique <input id="mortality-age" type="number" min="18" max="100" value="35"></label></div><canvas id="mortality-chart"></canvas></article>
-    <article class="panel chart-panel"><div class="chart-title"><div><h3>Répartition des causes</h3><p>Part relative des causes parmi les décès estimés à l’âge sélectionné.</p></div><label>Âge consulté <input id="cause-age" type="range" min="18" max="100" value="60"><output id="cause-age-label">60 ans</output></label></div><canvas id="causes-chart"></canvas><div id="cause-warning" class="hint"></div></article>
-    <div class="panel table-panel"><div class="section-heading"><div><h3>Table année par année</h3><p class="hint">Les probabilités sont arrondies pour la lisibilité.</p></div><button id="download-csv" class="secondary">Exporter le tableau CSV</button></div><div class="table-wrap"><table><thead><tr><th>Âge</th><th>Survie S(a)</th><th>Décès q(a)</th><th>Décès vu d’aujourd’hui</th><th>Cause dominante</th></tr></thead><tbody id="results-table"></tbody></table></div></div>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de survie</h3><p>Survie cumulée selon la table de population sélectionnée.</p></div></div><canvas id="survival-chart" aria-label="Courbe de survie"></canvas></article>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de décès par âge</h3><p>Probabilité conditionnelle de décès entre l’âge indiqué et l’âge suivant.</p></div><label>Âge de départ du graphique <input id="mortality-age" type="number" min="18" max="94" value="35"></label></div><canvas id="mortality-chart"></canvas></article>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Répartition des causes</h3><p>Part relative des causes parmi les décès estimés à l’âge sélectionné.</p></div><label>Âge consulté <input id="cause-age" type="range" min="18" max="94" value="60"><output id="cause-age-label">60 ans</output></label></div><canvas id="causes-chart"></canvas><div id="cause-warning" class="hint"></div></article>
+    <div class="panel table-panel"><div class="section-heading"><div><h3>Table année par année</h3><p class="hint">Les probabilités sont arrondies pour la lisibilité.</p></div><button id="download-csv" class="secondary">Exporter le tableau CSV</button></div><div class="table-wrap"><table><thead><tr><th>Âge</th><th>Survie S(a)</th><th>Décès q(a)</th><th>Décès vu d’aujourd’hui</th><th>Cause indicative (démo)</th></tr></thead><tbody id="results-table"></tbody></table></div></div>
   </section>
 
   <section id="method" class="panel method">
     <div class="eyebrow">TRANSPARENCE</div><h2>Méthode & limites</h2>
     <p>Cette application est une démonstration éducative. Elle présente une référence de mortalité de population. Les réponses de mode de vie et de santé enrichissent votre profil mais ne modifient pas encore le calcul. Elle ne prédit pas le décès d’une personne.</p>
     <ul>
+      <li>La source officielle visée est Eurostat, jeu demo_mlifetable : probabilités de décès par âge (PROBDEATH) et espérance de vie par âge (LIFEXP), avec année de référence affichée dans le résultat.</li>
+      <li>La table utilise un intervalle ouvert 95+. Cette version limite donc le questionnaire aux âges de 18 à 94 ans et n'affiche pas les horizons qui dépassent la plage exploitable.</li>
       <li>Les tables de mortalité sont des photographies statistiques d’une période et supposent implicitement que les taux observés restent applicables.</li>
       <li>Les informations sur le tabac, l’alcool, l’activité et la santé sont recueillies à titre descriptif. Elles ne sont pas utilisées pour ajuster le résultat tant qu’un modèle validé n’est pas disponible.</li>
-      <li>La distribution des causes peut être instable aux âges jeunes et pour les causes rares. Le regroupement et le lissage réduisent, sans éliminer, ce problème.</li>
+      <li>La répartition par cause affichée est encore un exemple synthétique : elle ne provient pas des données officielles et ne doit pas être interprétée comme un résultat réel.</li>
       <li>Les données de secours actuellement embarquées sont synthétiques. Elles servent uniquement à tester l’interface et ne constituent pas une statistique officielle.</li>
       <li>Les estimations ne modélisent pas l’évolution future des traitements, des comportements, de l’environnement ou des politiques de santé.</li>
-      <li>Les données du questionnaire sont traitées localement et ne sont pas envoyées au serveur. Le cache ne conserve que les statistiques publiques récupérées.</li>
+      <li>Les réponses détaillées restent dans le navigateur et ne sont pas envoyées à un serveur Horizon. Le pays et la référence statistique sélectionnés sont transmis à Eurostat pour récupérer la table publique ; les autres réponses ne sont pas transmises. Le cache ne conserve que les statistiques publiques.</li>
     </ul>
     <p class="disclaimer">Si une question de santé ou de prévention se pose, adressez-vous à un professionnel de santé. Ne prenez aucune décision médicale à partir de cette simulation.</p>
   </section>
