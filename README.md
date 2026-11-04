@@ -1,35 +1,50 @@
-# Horizon — estimateur statistique de mortalité
+# Horizon — questionnaire progressif et référence statistique
 
-Prototype statique en HTML, CSS et JavaScript. Le questionnaire et les calculs restent côté navigateur. Aucun serveur applicatif ni stockage serveur n'est utilisé.
-
-## Fichiers
-- `index.html` : structure, questionnaire, résultats et méthode/limites
-- `style.css` : interface responsive
-- `app.js` : questionnaire, moteur simplifié, Chart.js et export CSV
-- `data.js` : tentative d'accès Eurostat, cache localStorage et secours de démonstration
-- `risques.json` : hypothèses de risques relatifs et références à approfondir
+Application statique HTML/CSS/JavaScript, destinée à présenter des statistiques de mortalité de population à titre pédagogique.
 
 ## Lancer en local
-Ne pas ouvrir directement `index.html` en `file://`, car les requêtes `fetch` peuvent être bloquées. Utilisez un serveur statique, par exemple :
+
+Ne pas ouvrir directement `index.html` avec `file://`, car les requêtes `fetch` peuvent être bloquées. Depuis ce dossier :
 
 ```bash
 python -m http.server 8000
 ```
 
-Puis ouvrez `http://localhost:8000`.
+Puis ouvrir `http://localhost:8000`.
+
+## Parcours MVP
+
+Le questionnaire comporte trois étapes :
+
+1. **Profil essentiel** : âge, référence statistique (femmes, hommes ou ensemble) et pays.
+2. **Mode de vie** : tabac avec questions conditionnelles, alcool, activité physique, sédentarité et sommeil.
+3. **Santé** : mesures corporelles facultatives, maladies déclarées, antécédents familiaux et curseurs subjectifs.
+
+Les questions complémentaires sont facultatives. Les états « non renseigné », « je ne sais pas » et « je préfère ne pas répondre » sont distincts pour les questions médicales. Les curseurs subjectifs ne sont considérés comme renseignés que si l'utilisateur les manipule.
+
+## Calcul et limites actuelles
+
+- Les réponses du questionnaire restent dans la mémoire de la page et ne sont pas envoyées à un serveur.
+- Les réponses de mode de vie et de santé sont recueillies pour constituer le profil, mais **ne modifient pas le calcul de mortalité**.
+- Le calcul actuel utilise encore le jeu de secours synthétique de `data.js`. La tentative Eurostat ne fournit pas encore une série détaillée d'âge interprétée et validée.
+- Les risques à 1, 5 et 10 ans sont donc des résultats de démonstration sur données synthétiques, **pas des estimations officielles ni des risques individuels**.
+- Les répartitions par cause sont illustratives et ne sont pas des statistiques officielles.
+- `risques.json` conserve les anciens coefficients exploratoires, mais ils ne sont plus appliqués par le calcul du MVP.
+
+Avant toute diffusion de résultats comme statistiques réelles, il faut intégrer et valider des tables officielles par âge, pays et référence statistique, puis effectuer des tests actuariels indépendants.
+
+## Fichiers
+
+- `index.html` : structure et questionnaire.
+- `style.css` : interface responsive.
+- `app.js` : navigation, collecte locale, calcul de référence, graphiques et export CSV.
+- `data.js` : tentative Eurostat, cache navigateur et secours synthétique.
+- `risques.json` : anciens coefficients exploratoires conservés à titre documentaire ; non utilisés par le MVP.
 
 ## Déploiement
-Déposez le dossier dans un dépôt GitHub et activez GitHub Pages (Settings → Pages → Deploy from branch). Netlify et Vercel peuvent également servir le dossier sans configuration backend.
 
-## Important : état des données
-Ce dépôt est un premier jet technique, **pas un outil médical et pas encore un estimateur validé**. `data.js` tente une requête à Eurostat, mais refuse de traiter des dimensions JSON-stat qu'il n'a pas validées. Il bascule alors sur un jeu synthétique clairement identifié. Les parts de causes du jeu de secours sont illustratives. Elles ne doivent pas être publiées comme des statistiques officielles.
-
-Avant de communiquer des résultats réels :
-1. vérifier les dimensions exactes et les unités Eurostat dans les métadonnées ;
-2. construire et tester un parseur JSON-stat robuste ;
-3. relier une table de mortalité à des causes de décès observées avec dénominateurs compatibles ;
-4. établir les coefficients RR avec sources précises, stratification âge/sexe et incertitudes ;
-5. réaliser une validation actuarielle indépendante et une revue de sécurité/confidentialité.
+Le dossier peut être publié avec GitHub Pages ou tout autre hébergement statique HTTPS. Aucun backend n'est nécessaire.
 
 ## Confidentialité
-Les réponses du formulaire sont conservées dans la mémoire de la page uniquement. `localStorage` ne stocke que les données statistiques de cache. Les appels aux API publiques et au CDN peuvent néanmoins transmettre les informations techniques usuelles de requête (adresse IP, user-agent, etc.). Chart.js et les polices sont chargés via CDN dans ce premier jet.
+
+Les réponses du formulaire ne sont ni envoyées ni sauvegardées automatiquement. Le cache local ne concerne que les données statistiques. Les appels à l'API publique et aux CDN peuvent transmettre les informations techniques habituelles de connexion (adresse IP, user-agent).

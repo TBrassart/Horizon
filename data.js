@@ -12,6 +12,12 @@
     mx:{M:Array.from({length:101},(_,a)=>Math.min(.75,0.00015*Math.exp(a*.085))),F:Array.from({length:101},(_,a)=>Math.min(.75,0.00010*Math.exp(a*.085)))},
     causes:{M:{cardiovascular:.32,cancer:.30,respiratory:.10,accident:.08,suicide:.025,other:.175},F:{cardiovascular:.34,cancer:.29,respiratory:.11,accident:.045,suicide:.012,other:.203}}
   };
+  // Série "T" de démonstration : moyenne des deux séries synthétiques.
+  // Elle reste explicitement synthétique et ne remplace pas une table officielle.
+  FALLBACK.mx.T = FALLBACK.mx.M.map((value, age) => (value + FALLBACK.mx.F[age]) / 2);
+  FALLBACK.causes.T = Object.fromEntries(
+    Object.keys(FALLBACK.causes.M).map(key => [key, (FALLBACK.causes.M[key] + FALLBACK.causes.F[key]) / 2])
+  );
   function getCache(){try{const v=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(v&&Date.now()-v.saved<CACHE_TTL)return v.data;}catch{}return null;}
   function setCache(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({saved:Date.now(),data}));}catch{}}
   async function fetchJSON(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json();}
