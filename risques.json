@@ -1,0 +1,151 @@
+{
+  "version": "0.1.0",
+  "description": "Coefficients exploratoires, à remplacer par des coefficients validés et stratifiés avant usage public. Les valeurs ci-dessous ne constituent pas un modèle clinique.",
+  "method": {
+    "combination": "Somme pondérée des logarithmes de RR; atténuation des facteurs corrélés; plafonnement par cause.",
+    "maxRR": {
+      "cardiovascular": 3.0,
+      "cancer": 3.0,
+      "respiratory": 3.5,
+      "accident": 1.8,
+      "suicide": 1.8,
+      "other": 2.0
+    },
+    "correlationAttenuation": 0.65
+  },
+  "references": [
+    {
+      "factor": "smoking",
+      "reference": "US Surgeon General reports; IARC Monographs; cohort evidence on smoking and cause-specific mortality",
+      "note": "Coefficients exacts à documenter par statut, intensité, durée et âge avant toute version de production."
+    },
+    {
+      "factor": "activity",
+      "reference": "WHO Guidelines on physical activity and sedentary behaviour (2020)",
+      "note": "Association populationnelle; ne pas interpréter comme effet causal individuel."
+    },
+    {
+      "factor": "bmi",
+      "reference": "Global BMI Mortality Collaboration, The Lancet (2016), DOI: 10.1016/S0140-6736(16)30175-1",
+      "note": "Confusion résiduelle et causalité inverse possibles."
+    },
+    {
+      "factor": "alcohol",
+      "reference": "WHO; Global Burden of Disease alcohol analyses",
+      "note": "Dépend du niveau de consommation et de la définition des catégories."
+    },
+    {
+      "factor": "diabetes",
+      "reference": "Emerging Risk Factors Collaboration, N Engl J Med (2011), DOI: 10.1056/NEJMoa1008862",
+      "note": "L'effet varie avec le type, la durée et le contrôle du diabète."
+    }
+  ],
+  "factors": {
+    "smoking": {
+      "current": {
+        "cardiovascular": 1.7,
+        "cancer": 2.0,
+        "respiratory": 2.5,
+        "accident": 1.0,
+        "suicide": 1.1,
+        "other": 1.1
+      },
+      "former": {
+        "cardiovascular": 1.15,
+        "cancer": 1.2,
+        "respiratory": 1.25,
+        "accident": 1.0,
+        "suicide": 1.0,
+        "other": 1.0
+      }
+    },
+    "bmi": {
+      "underweight": {
+        "cardiovascular": 1.15,
+        "cancer": 1.05,
+        "respiratory": 1.15,
+        "other": 1.1
+      },
+      "obesity": {
+        "cardiovascular": 1.35,
+        "cancer": 1.15,
+        "respiratory": 1.1,
+        "other": 1.1
+      }
+    },
+    "alcohol": {
+      "high": {
+        "cardiovascular": 1.25,
+        "cancer": 1.35,
+        "accident": 1.5,
+        "suicide": 1.3,
+        "other": 1.15
+      }
+    },
+    "activity": {
+      "low": {
+        "cardiovascular": 1.2,
+        "cancer": 1.08,
+        "other": 1.08
+      },
+      "high": {
+        "cardiovascular": 0.9,
+        "cancer": 0.95,
+        "other": 0.95
+      }
+    },
+    "diet": {
+      "poor": {
+        "cardiovascular": 1.12,
+        "cancer": 1.05,
+        "other": 1.05
+      },
+      "good": {
+        "cardiovascular": 0.95,
+        "other": 0.98
+      }
+    },
+    "diabetes": {
+      "yes": {
+        "cardiovascular": 1.5,
+        "other": 1.15
+      }
+    },
+    "hypertension": {
+      "yes": {
+        "cardiovascular": 1.35
+      }
+    },
+    "cholesterol": {
+      "yes": {
+        "cardiovascular": 1.25
+      }
+    },
+    "history": {
+      "cancer": {
+        "cancer": 1.5,
+        "other": 1.1
+      },
+      "cardio": {
+        "cardiovascular": 1.6
+      },
+      "both": {
+        "cardiovascular": 1.6,
+        "cancer": 1.5,
+        "other": 1.1
+      }
+    },
+    "family": {
+      "cancer": {
+        "cancer": 1.12
+      },
+      "cardio": {
+        "cardiovascular": 1.12
+      },
+      "both": {
+        "cancer": 1.12,
+        "cardiovascular": 1.12
+      }
+    }
+  }
+}

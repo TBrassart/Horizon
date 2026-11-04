@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183b66">
+  <meta name="description" content="Estimateur statistique informatif de survie et de mortalité.">
+  <title>Horizon — estimateur statistique de mortalité</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="Horizon accueil"><span class="brand-mark">H</span><span>Horizon</span></a>
+  <nav><a href="#method">Méthode & limites</a><span id="data-status" class="status">Chargement des données…</span></nav>
+</header>
+<main>
+  <section class="intro">
+    <div class="eyebrow">ESTIMATION STATISTIQUE · BÊTA</div>
+    <h1>Votre horizon,<br><em>en perspective.</em></h1>
+    <p>Explorez les statistiques de survie et les causes de décès selon un profil simplifié. Ce modèle décrit des tendances de population, pas votre destin individuel.</p>
+    <div class="notice"><strong>Important :</strong> estimation statistique à visée informative uniquement. Ce site ne constitue ni un diagnostic ni un outil médical.</div>
+  </section>
+
+  <section class="panel" id="questionnaire">
+    <div class="section-heading"><div><div class="eyebrow">VOTRE PROFIL</div><h2>Quelques repères</h2></div><span id="step-count">Étape 1 / 4</span></div>
+    <form id="profile-form">
+      <div class="step active" data-step="0">
+        <div class="fields">
+          <label>Âge actuel <span class="hint">ans</span><input name="age" type="number" min="18" max="100" value="35" required></label>
+          <label>Sexe statistique
+            <select name="sex"><option value="M">Homme</option><option value="F">Femme</option></select>
+          </label>
+          <label>Pays de référence
+            <select name="country" id="country"><option value="FR">France</option><option value="DE">Allemagne</option><option value="BE">Belgique</option><option value="ES">Espagne</option><option value="IT">Italie</option><option value="US">États-Unis</option><option value="GB">Royaume-Uni</option><option value="CA">Canada</option><option value="JP">Japon</option><option value="AU">Australie</option><option value="WORLD">Monde (OMS)</option></select>
+          </label>
+        </div>
+      </div>
+      <div class="step" data-step="1">
+        <div class="fields">
+          <label>Taille <span class="hint">cm</span><input name="height" type="number" min="120" max="230" value="175" required></label>
+          <label>Poids <span class="hint">kg</span><input name="weight" type="number" min="30" max="300" value="75" required></label>
+          <label>Tabac
+            <select name="smoking"><option value="never">Jamais</option><option value="former">Ancien fumeur</option><option value="current">Actuel</option></select>
+          </label>
+          <label>Si fumeur actuel, cigarettes/jour <input name="cigarettes" type="number" min="0" max="100" value="10"></label>
+        </div>
+      </div>
+      <div class="step" data-step="2">
+        <div class="fields">
+          <label>Alcool
+            <select name="alcohol"><option value="low">Aucun / faible</option><option value="moderate" selected>Modéré</option><option value="high">Élevé</option></select>
+          </label>
+          <label>Activité physique
+            <select name="activity"><option value="low">Faible</option><option value="moderate" selected>Modérée</option><option value="high">Élevée</option></select>
+          </label>
+          <label>Alimentation
+            <select name="diet"><option value="poor">Peu équilibrée</option><option value="average" selected>Moyenne</option><option value="good">Équilibrée</option></select>
+          </label>
+        </div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="fields">
+          <fieldset><legend>Facteurs de santé déclarés</legend>
+            <label class="check"><input type="checkbox" name="diabetes"> Diabète</label>
+            <label class="check"><input type="checkbox" name="hypertension"> Hypertension</label>
+            <label class="check"><input type="checkbox" name="cholesterol"> Cholestérol élevé</label>
+          </fieldset>
+          <label>Antécédent personnel
+            <select name="history"><option value="none">Aucun indiqué</option><option value="cancer">Cancer</option><option value="cardio">Infarctus / maladie cardiovasculaire</option><option value="both">Les deux</option></select>
+          </label>
+          <label>Antécédents familiaux précoces
+            <select name="family"><option value="none">Aucun connu</option><option value="cardio">Cardiovasculaire</option><option value="cancer">Cancer</option><option value="both">Les deux</option></select>
+          </label>
+        </div>
+        <p class="hint">Les antécédents sont des facteurs complexes : dans cette version, leurs coefficients restent volontairement modestes et signalés comme exploratoires.</p>
+      </div>
+      <div class="form-actions"><button type="button" id="prev" class="secondary" disabled>Retour</button><button type="button" id="next">Continuer</button><button type="submit" id="calculate" hidden>Voir l’estimation</button></div>
+    </form>
+  </section>
+
+  <section id="results" hidden>
+    <div class="section-heading"><div><div class="eyebrow">VOTRE ESTIMATION</div><h2>Un scénario statistique</h2></div><button id="edit-profile" class="secondary">Modifier le profil</button></div>
+    <div class="metric-grid">
+      <article class="metric"><span>Espérance de vie restante estimée</span><strong id="life-years">—</strong><small>années · modèle de cohorte statique</small></article>
+      <article class="metric"><span>Âge moyen au décès estimé</span><strong id="mean-age">—</strong><small>âge statistique, non prédictif</small></article>
+      <article class="metric"><span>Médiane de survie estimée</span><strong id="median-age">—</strong><small>âge où la survie passe sous 50 %</small></article>
+    </div>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de survie</h3><p>Comparaison avec la table de population sélectionnée.</p></div></div><canvas id="survival-chart" aria-label="Courbe de survie"></canvas></article>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Probabilité de décès par âge</h3><p>Conditionnelle sur le fait d’être vivant au début de l’année, et cumulée depuis aujourd’hui.</p></div><label>Âge de départ du graphique <input id="mortality-age" type="number" min="18" max="100" value="35"></label></div><canvas id="mortality-chart"></canvas></article>
+    <article class="panel chart-panel"><div class="chart-title"><div><h3>Répartition des causes</h3><p>Part relative des causes parmi les décès estimés à l’âge sélectionné.</p></div><label>Âge consulté <input id="cause-age" type="range" min="18" max="100" value="60"><output id="cause-age-label">60 ans</output></label></div><canvas id="causes-chart"></canvas><div id="cause-warning" class="hint"></div></article>
+    <div class="panel table-panel"><div class="section-heading"><div><h3>Table année par année</h3><p class="hint">Les probabilités sont arrondies pour la lisibilité.</p></div><button id="download-csv" class="secondary">Exporter le tableau CSV</button></div><div class="table-wrap"><table><thead><tr><th>Âge</th><th>Survie S(a)</th><th>Décès q(a)</th><th>Décès vu d’aujourd’hui</th><th>Cause dominante</th></tr></thead><tbody id="results-table"></tbody></table></div></div>
+  </section>
+
+  <section id="method" class="panel method">
+    <div class="eyebrow">TRANSPARENCE</div><h2>Méthode & limites</h2>
+    <p>Cette application est une démonstration éducative. Elle combine des tables de mortalité de population avec des facteurs de risque simplifiés. Elle ne prédit pas le décès d’une personne.</p>
+    <ul>
+      <li>Les tables de mortalité sont des photographies statistiques d’une période et supposent implicitement que les taux observés restent applicables.</li>
+      <li>Les risques relatifs proviennent de sources publiées, mais leur transfert à un profil individuel est incertain. Les effets corrélés sont atténués et plafonnés.</li>
+      <li>La distribution des causes peut être instable aux âges jeunes et pour les causes rares. Le regroupement et le lissage réduisent, sans éliminer, ce problème.</li>
+      <li>Les données de 2020 à 2022 sont potentiellement atypiques. Le site privilégie une année de référence récente hors pic pandémique quand elle est disponible.</li>
+      <li>Les estimations ne modélisent pas l’évolution future des traitements, des comportements, de l’environnement ou des politiques de santé.</li>
+      <li>Les données du questionnaire sont traitées localement et ne sont pas envoyées au serveur. Le cache ne conserve que les statistiques publiques récupérées.</li>
+    </ul>
+    <p class="disclaimer">Si une question de santé ou de prévention se pose, adressez-vous à un professionnel de santé. Ne prenez aucune décision médicale à partir de cette simulation.</p>
+  </section>
+</main>
+<footer><span>Horizon · Estimateur statistique</span><span>Prototype open-source · Calculs dans le navigateur</span></footer>
+</body>
+</html>
